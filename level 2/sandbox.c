@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-	 void	alarm_handler(int sig)
+	void	alarm_handler(int sig)
 {
 	(void)sig;
 }
@@ -52,16 +52,8 @@ int	sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 	}
 	if (WIFSIGNALED(status))
 	{
-		if (WTERMSIG(status) == SIGALRM)
-		{
-			if (verbose == true)
-				printf("killed by time %s\n", strsignal(WTERMSIG(status)));
-		}
-		else
-		{
-			if (verbose == true)
-				printf("Bad function: %s\n", strsignal(WTERMSIG(status)));
-		}
+		if (verbose == true)
+			printf("Bad function: %s\n", strsignal(WTERMSIG(status)));
 		return (0);
 	}
 	return (-1);
