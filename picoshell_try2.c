@@ -80,7 +80,7 @@ int    picoshell(char **cmds[])
 			close(prev_pipe);
 		i++;
 	}
-	while(wait(NULL));
+	while(wait(NULL) > 0);
 	return 0;
 }
 #include <stdio.h>
