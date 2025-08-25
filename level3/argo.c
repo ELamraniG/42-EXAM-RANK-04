@@ -26,16 +26,11 @@ typedef struct	pair {
 	json	value;
 }	pair;
 
+int parse_string(json *dst,FILE *stream);
 
+int parse_int(json *dst,FILE *stream);
 
-
-int	parser(json *dst, FILE *stream);
-
-int	parse_int(json *dst, FILE *stream);
-
-int	parse_map(json *dst, FILE *stream);
-int	parse_string(json *dst, FILE *stream);
-
+int parse_map(json *dst,FILE *stream);
 void	free_json(json j);
 int	argo(json *dst, FILE *stream);
 
@@ -124,121 +119,6 @@ void	serialize(json j)
 	}
 }
 
-int	argo(json *dst, FILE *stream)
-{
-	return (parser(dst, stream));
-}
-
-int	parser(json *dst, FILE *stream)
-{
-	int c;
-
-	c = peek(stream);
-	if(c == '"')
-		return (parse_string(dst, stream));
-	else if(c == '-' || isdigit(c))
-		return (parse_int(dst, stream));
-	else if(c == '{')
-		return (parse_map(dst, stream));
-	else
-	{
-		unexpected(stream);
-		return -1;
-	}
-}
-
-int	parse_string(json *dst, FILE *stream)
-{
-	char buffer[4096];
-	char c;
-	int  i = 0;
-
-	if(!expect(stream, '"'))
-		return -1;
-	while(1)
-	{
-		c = getc(stream);
-		if(c == EOF)
-		{
-			unexpected(stream);
-			return -1;
-		}
-		if(c == '"')
-			break ;
-		if(c == '\\')
-		{
-			c = getc(stream);
-			if(c == EOF)
-			{
-				unexpected(stream);
-				return -1;
-			}
-		}
-		buffer[i] = c;
-		i++;
-	}
-	buffer[i] = '\0';
-	dst->type = STRING;
-	dst->string = strdup(buffer);
-	return 1;
-}
-
-int	parse_int(json *dst, FILE *stream)
-{
-	int n;
-
-	if(fscanf(stream, "%d", &n) == 1)
-	{
-		dst->type = INTEGER;
-		dst->integer = n;
-		return 1;
-	}
-	unexpected(stream);
-	return -1;
-}
-
-int	parse_map(json *dst, FILE *stream)
-{
-	pair	*items;
-	size_t	size;
-	json	key;
-
-	if(!expect(stream, '{'))
-		return -1;
-	while(!accept(stream, '}'))
-	{
-		items = realloc(items, sizeof(pair) * (size + 1));
-		if(parse_string(&key, stream) == -1)
-		{
-			free(items);
-			return -1;
-		}
-		if(!expect(stream, ':'))
-		{
-			free(key.string);
-			free(items);
-			return -1;
-		}
-		if(parser(&items[size].value, stream) == -1)
-		{
-			free(key.string);
-			free(items);
-			return -1;
-		}
-		items[size].key = key.string;
-		size++;
-		if(!accept(stream, ',') && peek(stream) != '}')
-		{
-			free(items);
-			return -1;
-		}
-	}
-	dst->type = MAP;
-	dst->map.data = items;
-	dst->map.size = size;
-	return 1;
-}
-
 int	main(int argc, char **argv)
 {
 	if (argc != 2)
@@ -253,4 +133,112 @@ int	main(int argc, char **argv)
 	}
 	serialize(file);
 	printf("\n");
+}
+
+
+int	argo(json *dst, FILE *stream)
+{
+	char c;
+	c = peek(stream);
+	if (c == '"')
+		return (parse_string(dst,stream));
+	if (c == '-' || isdigit(c))
+		return (parse_int(dst,stream));
+	if (c == '{')
+		return (parse_map(dst,stream));
+	unexpected(stream);
+	return -1;
+}
+
+int parse_string(json *dst,FILE *stream)
+{
+	if (!expect(stream,'"'))
+		return -1;
+	char buffer[4096];
+	char c;
+	int i = 0;
+	while (1)
+	{
+		c = getc(stream);
+		if (c == EOF)
+		{
+			unexpected(stream);
+			return (-1);
+		}
+		if (c == '"')
+			break;
+		else if (c == '\\')
+		{
+			c = getc(stream);
+			if (c == EOF)
+			{
+				unexpected(stream);
+				return (-1);
+			}
+		}
+		buffer[i++] = c;
+	}
+	
+	buffer[i] = 0;
+	char *ret;
+	ret = strdup(buffer);
+	dst->type = STRING;
+	dst->string = ret;
+	return (1);
+}
+
+int parse_int(json *dst,FILE *stream)
+{
+	int n;
+	if (fscanf(stream,"%d", &n) == 1)
+	{
+		dst->integer = n;
+		dst->type = INTEGER;
+		return 1;
+	}
+	unexpected(stream);
+	return -1;
+}
+
+int parse_map(json *dst,FILE *stream)
+{
+	pair *items = NULL;
+	json key;
+	int size  = 0;
+
+	if (!expect(stream,'{'))
+		return -1;
+	while (!accept(stream,'}'))
+	{
+		items = realloc(items,sizeof(pair) * (size + 1));
+		if (parse_string(&key,stream) == -1)
+		{
+			free(items);
+			return (-1);
+		}
+		if (!expect(stream,':'))
+		{
+			free(items);
+			free(key.string);
+			return -1;
+		}
+		if (argo(&items[size].value,stream) == -1)
+		{
+			free(items);
+			free(key.string);
+			return -1;
+		}
+		items[size].key = key.string;
+		size++;
+		if(!accept(stream,',') && peek(stream) != '}')
+		{
+			unexpected(stream);
+			free(items);
+			return -1;
+		}
+	}
+	dst->type = MAP;
+	dst->map.data = items;
+	dst->map.size = size;
+	return 1;
 }

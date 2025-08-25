@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include "get_next_line.h"
 #include <stdio.h>
 int	ft_popen(const char *file, char *const argv[], char type)
 {
