@@ -3,6 +3,8 @@
 		"wait.h": "c",
 		"get_next_line.h": "c",
 		"stdlib.h": "c",
-		"unistd.h": "c"
+		"unistd.h": "c",
+		"string.h": "c",
+		"stdbool.h": "c"
 	}
 }

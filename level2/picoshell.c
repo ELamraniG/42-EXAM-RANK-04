@@ -1,104 +1,60 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-int strlenn(char ***cmds)
+#include <stdlib.h>
+int    picoshell(char **cmds[])
 {
 	int i = 0;
-	while (cmds[i])
-		i++;
-	return i;
-}
-
-void dup3(int to,int by)
-{
-	dup2(to,by);
-	close(to);
-}
-
-int picoshell(char **cmds[])
-{
-	int size = strlenn(cmds);
-	int curr_pipe[2];
+	int fd[2];
 	int prev_pipe = -1;
-	int i = 0;
-	while(cmds[i])
+	int pid;
+	while (cmds[i])
 	{
-		if (i != size - 1 && pipe(curr_pipe) == -1)
+		if (cmds[i + 1])
 		{
-			if (i != 0)
+			if (pipe(fd) == -1)
+			{
+				if(prev_pipe != -1)
+					close(prev_pipe);
+				return 1;
+			}
+		}
+		pid = fork();
+		if (pid == -1)
+		{
+			if (prev_pipe != -1)
 				close(prev_pipe);
+			if(cmds[i + 1])
+			{
+				close(fd[0]);
+				close(fd[1]);
+			}
 			return 1;
 		}
-		int id = fork();
-		if (id == -1)
+		if (pid == 0)
 		{
-			if (i != 0)
+			if(cmds[i + 1])
+				dup2(fd[1],STDOUT_FILENO);
+			if (prev_pipe != -1)
+				dup2(prev_pipe,STDIN_FILENO);
+			if (prev_pipe != -1)
 				close(prev_pipe);
-			close(curr_pipe[0]);
-			close(curr_pipe[1]);
-			return 1;
-		}
-		if (id == 0)
-		{
-			if (i == 0 && size != 1)
+			if (cmds[i + 1])
 			{
-				close(curr_pipe[0]);
-				dup3(curr_pipe[1],STDOUT_FILENO);
+				close(fd[1]);
+				close(fd[0]);
 			}
-			else if (i != size - 1)
-			{
-				close(curr_pipe[0]);
-				dup3(prev_pipe,STDIN_FILENO);
-				dup3(curr_pipe[1],STDOUT_FILENO);
-			}
-			else if (i == size - 1)
-				dup3(prev_pipe,STDIN_FILENO);
 			execvp(cmds[i][0],cmds[i]);
-			exit(1);	
+			exit(1);
 		}
-		if (i != 0)
+		if (prev_pipe != -1)
 			close(prev_pipe);
-		if (i != size - 1)
+		if (cmds[i + 1])
 		{
-			prev_pipe = curr_pipe[0];
-			close(curr_pipe[1]);
+			prev_pipe = fd[0];
+			close(fd[1]);
 		}
 		i++;
 	}
-	while (wait(NULL) != -1);
+	while (wait(NULL) > 0);
 	return 0;
-}
-
-
-int main(int argc, char **argv)
-{
-	int cmds_size = 1;
-	for (int i = 1; i < argc; i++)
-	{
-		if (!strcmp(argv[i], "|"))
-			cmds_size++;
-	}
-	char ***cmds = calloc(cmds_size + 1, sizeof(char **));
-	if (!cmds)
-	{
-		dprintf(2, "Malloc error: %m\n");
-		return 1;
-	}
-	cmds[0] = argv + 1;
-	int cmds_i = 1;
-	for (int i = 1; i < argc; i++)
-		if (!strcmp(argv[i], "|"))
-		{
-			cmds[cmds_i] = argv + i + 1;
-			argv[i] = NULL;
-			cmds_i++;
-		}
-	int ret = picoshell(cmds);
-	if (ret)
-		perror("picoshell");
-	free(cmds);
-	return ret;
 }
