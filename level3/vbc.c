@@ -177,7 +177,7 @@ int	main(int argc, char **argv)
 		return (1);
 	if (argv[1][0])
 	{
-		printf("Unexpected token '%c'\n",*argv[1]);
+		unexpected(*argv[1]);
 		destroy_tree(tree);
 		return (1);
 	}
