@@ -1,6 +1,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+// added 3 function pars add , pars mult, parse parenth and number , added a check in main to check if there is any remaining unsed chars
+
 
 typedef struct node
 {
@@ -183,5 +185,6 @@ int	main(int argc, char **argv)
 	}
 		printf("%d\n", eval_tree(tree));
 	destroy_tree(tree);
+	return 0;
 }
 
