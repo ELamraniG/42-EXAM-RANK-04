@@ -160,7 +160,7 @@ node	*parse_NumxParenth(char **s)
         (*s)++;
         return root;
     }
-    else if (isdigit(**s) || **s == '-')
+    else if (isdigit(**s))
     {
         root = new_node(tmp);
         if (!root)
