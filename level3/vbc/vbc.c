@@ -199,6 +199,7 @@ int main(int argc, char **argv)
         destroy_tree(tree);
         return 1;
     }
+	  destroy_tree(tree);
 	printf("%d\n", eval_tree(tree));
 
 }
