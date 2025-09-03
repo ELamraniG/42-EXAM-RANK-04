@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-
+#include <stdlib.h>
 
 float	distance(float a[2], float b[2]);
 
@@ -120,8 +120,9 @@ int		main(int ac, char **av)
 	if (ac > 1)
 		fclose(file);
 
-	visited = calloc(11, bool);
-	tsp(0)
-
+	for (int i = 0; i < 11;i++)
+		visited[i] = 0;
+	tsp(0,0);
+	printf("%.2f", best_route);
 	free(array);
 }
